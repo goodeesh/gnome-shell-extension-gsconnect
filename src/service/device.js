@@ -264,9 +264,8 @@ const Device = GObject.registerClass({
 
     _migratePlugins() {
         const deprecated = ['photo'];
-        const supported = this.settings
-            .get_strv('supported-plugins')
-            .filter(name => !deprecated.includes(name));
+        const current = this.settings.get_strv('supported-plugins');
+        const supported = current.filter(name => !deprecated.includes(name));
 
         // scrcpy-kdeconnect: this plugin is local-only, so it can never be
         // matched through KDE Connect capabilities. Seed it for every device
@@ -274,7 +273,10 @@ const Device = GObject.registerClass({
         if (!supported.includes('scrcpy'))
             supported.push('scrcpy');
 
-        this.settings.set_strv('supported-plugins', supported);
+        // Avoid signalling changed::supported-plugins during _init unless the
+        // list actually changed (the signal reloads plugins).
+        if (current.join('\0') !== supported.join('\0'))
+            this.settings.set_strv('supported-plugins', supported);
     }
 
     _handleIdentity(packet) {
