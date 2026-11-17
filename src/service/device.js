@@ -268,6 +268,12 @@ const Device = GObject.registerClass({
             .get_strv('supported-plugins')
             .filter(name => !deprecated.includes(name));
 
+        // scrcpy-kdeconnect: this plugin is local-only, so it can never be
+        // matched through KDE Connect capabilities. Seed it for every device
+        // that already has a cached plugin list.
+        if (!supported.includes('scrcpy'))
+            supported.push('scrcpy');
+
         this.settings.set_strv('supported-plugins', supported);
     }
 
@@ -313,7 +319,8 @@ const Device = GObject.registerClass({
                 continue;
 
             // If we can handle packets it sends or send packets it can handle
-            if (meta.incomingCapabilities.some(t => outgoing.includes(t)) ||
+            if (meta.alwaysSupported ||
+                meta.incomingCapabilities.some(t => outgoing.includes(t)) ||
                 meta.outgoingCapabilities.some(t => incoming.includes(t)))
                 supported.push(name);
         }
